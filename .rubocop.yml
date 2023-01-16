@@ -1,0 +1,5 @@
+AllCops:
+  TargetRubyVersion: 3.2.0
+
+Style/Documentation:
+  Enabled: false
