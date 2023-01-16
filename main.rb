@@ -7,17 +7,6 @@ require 'active_support/inflector'
 # require your gems as usual
 Bundler.require(:default)
 
-# UpdatedMandate.new
-#   .has(:mandate, apply: { find_by_id: 1 })
-#   .has(:active_front, apply: { active_front: 1 })
-
-Something = Struct.new('Something', :foo, :bar)
-Foo = Struct.new('Foo', :attr1)
-Bar = Struct.new('Bar', :attr2)
-foo = Foo.new(attr1: String.new('A string'))
-bar = Bar.new(attr2: { a: :hash })
-something = Something.new(foo:, bar:)
-
 class DeclarativeService
   def initialize
     @failed = false
@@ -38,6 +27,7 @@ class DeclarativeService
   end
 
   def failure!(message)
+    @failed = true
     raise StandardError, message
   end
 
@@ -56,6 +46,8 @@ class DeclarativeService
   end
 
   class Trait
+    attr_accessor :value
+
     def initialize(service)
       @service = service
     end
@@ -74,51 +66,47 @@ class DeclarativeService
   end
 end
 
-class UpdatedThing < DeclarativeService
-  class Something < DeclarativeService::Trait
-    def initialize(...)
-      super
-      @value = nil
+class NewlyAddedComment < DeclarativeService
+  class Comment < DeclarativeService::Trait
+    def post=(post)
+      @value.post = post
     end
 
-    def set(obj)
-      @value = obj
-    end
-
-    def update_foo_string(string)
-      @value.foo.attr1 = String.new(string)
+    def user=(user)
+      @value.user = user
     end
   end
 
-  class Foo < DeclarativeService::Trait
+  class Post < DeclarativeService::Trait; end
+
+  class User < DeclarativeService::Trait
     def initialize(...)
       super
-      @value = @service.something.foo
+      @value = @service.comment.user
     end
 
-    def append(string)
-      @value.attr1.concat " #{string}"
-    rescue FrozenError => e
-      @service.failure! e.message
-    end
-  end
-
-  class Bar < DeclarativeService::Trait
-    def initialize(...)
-      super
-      @value = @service.something.bar
-    end
-
-    def update_a(new_value)
-      @value.attr2[:a] = new_value
-    end
+    def new_name(new_name) = self.name = new_name
   end
 end
 
-o = UpdatedThing.new
-                .has(:something).apply(:something, set: something, update_foo_string: 'Updated string')
-                .has(:foo).apply(:foo, append: 'appended string')
-                .has(:bar).apply(:bar, update_a: :new_value)
-                .has(:foo).apply(:foo, append: 'another appended string')
+# Setup some objects
+####################################################
+Comment = Struct.new('Comment', :user, :post)
+Post = Struct.new('Post', :title)
+User = Struct.new('User', :name)
+post = Post.new(title: String.new('A title'))
+user = User.new(name: String.new('Sparauao Rossi'))
+comment = Comment.new
+####################################################
 
-binding.irb
+result = NewlyAddedComment.new
+                          .has(:post)
+                          .has(:comment)
+                          .apply(:post, :value= => post)
+                          .apply(:comment, :value= => comment, :post= => post, :user= => user)
+                          .has(:user)
+                          .apply(:user, new_name: 'Derrik')
+
+pp result.comment
+pp result.post
+pp result.user
