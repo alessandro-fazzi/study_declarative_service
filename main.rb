@@ -20,6 +20,8 @@ class DeclarativeService
 
   def apply(trait_name, **kwargs)
     kwargs.each do |k, v|
+      next send(trait_name).send(k) if v.nil?
+
       send(trait_name).send(k, v)
     end
 
@@ -86,6 +88,8 @@ class NewlyAddedComment < DeclarativeService
     end
 
     def new_name(new_name) = self.name = new_name
+
+    def print = pp self
   end
 end
 
@@ -105,7 +109,7 @@ result = NewlyAddedComment.new
                           .apply(:post, :value= => post)
                           .apply(:comment, :value= => comment, :post= => post, :user= => user)
                           .has(:user)
-                          .apply(:user, new_name: 'Derrik')
+                          .apply(:user, new_name: 'Derrik', print: nil)
 
 pp result.comment
 pp result.post
